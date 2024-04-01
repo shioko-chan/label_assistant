@@ -1,19 +1,41 @@
 import cv2
 import os
 import argparse
+import yaml
 from ultralytics import YOLO
 
 parser = argparse.ArgumentParser()
 
+parser.add_argument("--config", "-c", help="path to config file")
 parser.add_argument("--path", "-p", help="path to images")
 parser.add_argument("--output", "-o", help="path to save labels")
 
 args = parser.parse_args()
 
-imgpath = os.path.abspath(args.path)
-imgs = [os.path.join(imgpath, img) for img in os.listdir(imgpath)]
+config_path = args.config if args.config else "./config.yaml"
 
-model = YOLO("pt")
+if os.path.exists(config_path):
+    config = yaml.safe_load(open(config_path))
+else:
+    config = None
+
+if args.path:
+    imgs_path = args.path
+elif config:
+    imgs_path = config["img_path"]
+else:
+    print("Please provide path to images")
+    exit()
+    
+if not os.path.exists(imgs_path):
+    print(f"provided images path \"{args.path}\" not found")
+    exit()
+        
+img_path = os.path.abspath(args.path)
+
+imgs = [os.path.join(img_path, img) for img in os.listdir(img_path)]
+
+model = YOLO(config['model'])
 
 for img in imgs:
     label_path = os.path.join(
