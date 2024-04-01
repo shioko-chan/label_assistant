@@ -12,7 +12,7 @@ parser.add_argument("--output", "-o", help="path to save labels")
 
 args = parser.parse_args()
 
-config_path = args.config if args.config else "./config.yaml"
+config_path = args.config if args.config else "./config/config.yaml"
 
 if os.path.exists(config_path):
     config = yaml.safe_load(open(config_path))
@@ -25,11 +25,11 @@ elif config:
     imgs_path = config["img_path"]
 else:
     print("Please provide path to images")
-    exit()
+    exit(1)
     
 if not os.path.exists(imgs_path):
     print(f"provided images path \"{args.path}\" not found")
-    exit()
+    exit(1)
         
 img_path = os.path.abspath(args.path)
 
@@ -52,3 +52,4 @@ for img in imgs:
     cv2.waitKey(0)
     with open(label_path, "w") as f:
         f.writelines(labels)
+
