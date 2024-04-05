@@ -3,8 +3,8 @@ from PySide6.QtQml import QmlElement, QmlSingleton
 from ultralytics import YOLO
 from typing import Optional
 from pathlib import Path
-from PIL import Image
-
+from urllib.parse import urlparse
+import yaml 
 
 # @QmlSingleton
 # @QmlElement
@@ -16,24 +16,71 @@ class DataModel:
         src: Optional[Path],
         dst: Optional[Path],
         model: Optional[Path],
-    ):
-        self.predictor = Predictor(model) if (model and model.is_file()) else None
-        self.images = list(src.glob("*.jpg")) if (src and src.is_dir()) else None
-        self.save_dir = dst if (dst and dst.is_dir()) else None
-        self.index = 0
+    ):  
         self.root = root
+        self.choose_dataset(src)
+        self.predictor = Predictor(model) if (model and model.is_file()) else None
+        self.save_dir = dst if (dst and dst.is_dir()) else None
+        root.nextImage.connect(self.get_image)
+        root.chooseDataset.connect(self.choose_dataset)
+        root.selectModel.connect(self.set_predictor)
+        self.hist_stack = []
+        self.config = {
+            "img_path": src,
+            "label_path": dst,
+            "model_path": model
+        }
 
     def get_image(self):
         if self.index >= len(self.images):
             self.root.setProperty("imageSource", "../resource/default.jpg")
+            self.root.setProperty("noDataSetTip", True)
         else:
             self.root.setProperty("imageSource", str(self.images[self.index]))
+            self.root.setProperty("noDataSetTip", False)
+            self.index += 1
+
+    def prev_image(self):
+        ...
+    
+    def next_image(self):
+        ...
+        
+    def choose_dataset(self, src):
+        if src:
+            if not isinstance(src, Path):
+                src = Path(urlparse(src).path).resolve()
+            if src.is_dir():
+                self.images = list(src.glob("*.jpg"))
+            else:
+                self.images = []
+        else:
+            self.images = []
+
+        self.index = 0
+        self.get_image()
+    
+    def set_predictor(self, src):
+        if src and src.is_file():
+            self.predictor = Predictor(src)
+            self.root.setProperty("")
+        else:
+            self.predictor = None
+    # def save_label(self, label):
+    #     if self.save_dir:
+    #         with open(self.save_dir / f"{self.index}.txt", "w") as f:
+    #             f.write(label)
+    #     else:
+    #         print("No save directory selected")
+    def save_config(self):
+        with open(Path('../config/config.yaml'), 'w') as f:
+            yaml.dump(self.config, f)
 
 
 class Predictor:
 
     def __init__(self, model: Path):
-        self.model = YOLO("yolov8n.pt")
+        # self.model = YOLO("yolov8n.pt")
         self.model = YOLO(model)
 
     def predict(img):

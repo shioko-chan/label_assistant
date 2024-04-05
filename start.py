@@ -48,9 +48,7 @@ if __name__ == "__main__":
     if not model_path:
         model_path = Path("./weights/yolov8n_pose_powerrune-armor.pt").resolve()
 
-    print(sys.argv)
-
-    app = QGuiApplication(sys.argv)
+    app = QGuiApplication([])
     engine = QQmlApplicationEngine()
 
     engine.load(Path("./GUI/main.qml").resolve())
@@ -61,7 +59,6 @@ if __name__ == "__main__":
     root = engine.rootObjects()[0]
 
     data_model = DataModel(root, img_path, label_path, model_path)
-    root.nextImageSignal.connect(data_model.get_image)
 
     app.exec()
     sys.exit()
