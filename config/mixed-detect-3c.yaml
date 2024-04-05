@@ -1,5 +1,5 @@
 ﻿names:
-  0: Power Rune
+  0: PR
   1: B1
   2: B2
   3: B3
@@ -16,5 +16,6 @@
   14: RG
   15: RO
   16: RB
+  17: PB
 num_classes: 17
 kpt_shape: [5, 2]

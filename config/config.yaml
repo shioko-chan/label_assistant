@@ -1,3 +1,3 @@
-﻿weight: './weights/yolov8n_pose_powerrune-armor.pt' # path to detection model
+﻿model: './weights/yolov8n_pose_powerrune-armor.pt' # path to detection model
 dataset: './data/dataset.yaml' # path to dataset yaml
 img_path: './'

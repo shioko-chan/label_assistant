@@ -1,55 +1,67 @@
-import cv2
-import os
 import argparse
 import yaml
-from ultralytics import YOLO
+import os
+from pathlib import Path
+from data import DataModel
+from typing import Optional
+import sys
+from PySide6.QtCore import QObject, Signal, Slot, QPointF
+from PySide6.QtGui import QGuiApplication
+from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQuick import QQuickItem
 
-parser = argparse.ArgumentParser()
 
-parser.add_argument("--config", "-c", help="path to config file")
-parser.add_argument("--path", "-p", help="path to images")
-parser.add_argument("--output", "-o", help="path to save labels")
+os.environ["QML_XHR_ALLOW_FILE_READ"] = "1"
 
-args = parser.parse_args()
+if __name__ == "__main__":
 
-config_path = args.config if args.config else "./config/config.yaml"
+    parser = argparse.ArgumentParser()
 
-if os.path.exists(config_path):
-    config = yaml.safe_load(open(config_path))
-else:
-    config = None
+    parser.add_argument("--config", "-c", help="path to config file")
+    parser.add_argument("--path", "-p", help="path to images")
+    parser.add_argument("--output", "-o", help="path to save labels")
+    parser.add_argument("--model", "-m", help="path to model selected")
 
-if args.path:
-    imgs_path = args.path
-elif config:
-    imgs_path = config["img_path"]
-else:
-    print("Please provide path to images")
-    exit(1)
-    
-if not os.path.exists(imgs_path):
-    print(f"provided images path \"{args.path}\" not found")
-    exit(1)
-        
-img_path = os.path.abspath(args.path)
+    args = parser.parse_args()
 
-imgs = [os.path.join(img_path, img) for img in os.listdir(img_path)]
+    config_path = Path(args.config if args.config else "./config/config.yaml")
 
-model = YOLO(config['model'])
+    if config_path.exists():
+        config = yaml.safe_load(config_path.open())
+    else:
+        config = None
 
-for img in imgs:
-    label_path = os.path.join(
-        args.output, os.path.basename(img).replace(".jpg", ".txt")
-    )
-    img = cv2.imread(img)
-    results = model.predict(img).numpy().cpu()
-    labels = []
-    for result in results:
-        for x1, y1, x2, y2 in result.xyxy:
-            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        # for
-    cv2.imshow("preview", img)
-    cv2.waitKey(0)
-    with open(label_path, "w") as f:
-        f.writelines(labels)
+    # commandline first, config file second
+    def resolve_path(path: Optional[str], path_name: str) -> Optional[Path]:
+        if not path and config and path_name in config:
+            path = config[path_name]
+        if not path:
+            return None
+        path = Path(path)
+        if not path.exists():
+            return None
+        return path.resolve()
 
+    img_path = resolve_path(args.path, "img_path")
+    label_path = resolve_path(args.output, "label_path")
+    model_path = resolve_path(args.model, "model_path")
+    if not model_path:
+        model_path = Path("./weights/yolov8n_pose_powerrune-armor.pt").resolve()
+
+    print(sys.argv)
+
+    app = QGuiApplication(sys.argv)
+    engine = QQmlApplicationEngine()
+
+    engine.load(Path("./GUI/main.qml").resolve())
+
+    if not engine.rootObjects():
+        sys.exit(-1)
+
+    root = engine.rootObjects()[0]
+
+    data_model = DataModel(root, img_path, label_path, model_path)
+    root.nextImageSignal.connect(data_model.get_image)
+
+    app.exec()
+    sys.exit()
