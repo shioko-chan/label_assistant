@@ -1,0 +1,6 @@
+.vscode
+/test
+/config
+__pycache__
+/output
+/resource
