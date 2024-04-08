@@ -38,19 +38,21 @@ Rectangle {
 
             anchors.fill: parent
             model: annotationList
-
+            
             // highlight: Rectangle {
             //     color: "lightsteelblue"
             //     radius: 5
             // }
             delegate: Item {
                 property bool activated: false
-
+                property int bbox_index: index
                 anchors.fill: parent
 
                 Rectangle {
                     id: bbox
-
+                    Component.onCompleted: {
+                                console.log("bbox",model.x, model.y, index)
+                            }
                     color: "transparent"
                     border.color: activated ? "white" : colors[model.cls_id % colors.length]
                     border.width: 2
@@ -71,18 +73,30 @@ Rectangle {
                     MouseArea {
                         property real lastX: 0
                         property real lastY: 0
+                        property bool isMoving: false
 
                         anchors.fill: parent
-                        onClicked: {
-                            console.log(index);
-                            activated = !activated;
-                            lastX = mouseX;
-                            lastY = mouseY;
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        onClicked: function(mouse) {
+                            if (mouse.button == Qt.RightButton) {
+                                deleteAnnotation(index);
+                            } else {
+                                activated = !activated;
+                                lastX = mouseX;
+                                lastY = mouseY;
+                            }
+                        }
+                        onReleased: function(mouse) {
+                            if (mouse.button == Qt.LeftButton && isMoving) {
+                                setBbox(index, (bbox.x - labelImage.image_top_left_x + bbox.width / 2) / labelImage.paintedWidth, (bbox.y - labelImage.image_top_left_y + bbox.height / 2) / labelImage.paintedHeight, bbox.width / labelImage.paintedWidth, bbox.height / labelImage.paintedHeight);
+                                isMoving = false;
+                            }
                         }
                         onPositionChanged: {
                             if (activated && pressed) {
                                 bbox.x += mouseX - lastX;
                                 bbox.y += mouseY - lastY;
+                                isMoving = true;
                             }
                         }
                     }
@@ -101,17 +115,6 @@ Rectangle {
                         anchors.fill: parent
 
                         Rectangle {
-                            // MouseArea {
-                            //     anchors.horizontalCenter: parent.horizontalCenter
-                            //     anchors.verticalCenter: parent.verticalCenter
-                            //     width: parent.width + 4
-                            //     height: parent.height + 4
-                            //     onClicked: {
-                            //         console.log(index);
-                            //         activated = !activated;
-                            //     }
-                            // }
-
                             id: keypoint
 
                             color: activated ? "white" : colors[index]
@@ -121,25 +124,34 @@ Rectangle {
                             height: dotSize
                             border.color: "black"
                             border.width: 1
-
+                            Component.onCompleted: {
+                                console.log("keypoint",model.x, model.y, index)
+                            }
                             MouseArea {
                                 property real lastX: 0
                                 property real lastY: 0
+                                property bool isMoving: false
 
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: parent.width + 6
                                 height: parent.height + 6
-                                onClicked: {
-                                    console.log(index);
+                                onClicked: function(mouse) {
                                     activated = !activated;
                                     lastX = mouseX;
                                     lastY = mouseY;
+                                }
+                                onReleased: function(mouse) {
+                                    if (mouse.button == Qt.LeftButton && isMoving) {
+                                        setKpnt(bbox_index, index, (keypoint.x - labelImage.image_top_left_x + dotSize / 2) / labelImage.paintedWidth, (keypoint.y - labelImage.image_top_left_y + dotSize / 2) / labelImage.paintedHeight);
+                                        isMoving = false;
+                                    }
                                 }
                                 onPositionChanged: {
                                     if (activated && pressed) {
                                         keypoint.x += mouseX - lastX;
                                         keypoint.y += mouseY - lastY;
+                                        isMoving = true;
                                     }
                                 }
                             }

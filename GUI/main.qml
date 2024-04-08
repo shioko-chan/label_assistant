@@ -41,7 +41,11 @@ ApplicationWindow {
     signal saveLabels()
     signal undo()
     signal redo()
-
+    signal deleteAnnotation(int index)
+    signal setBbox(int bbox_index, real x, real y, real width, real height)
+    signal setKpnt(int bbox_index, int kpnt_index, real x, real y)
+    // signal addAnnotation(int kpnt, string annotation)
+    
     function appendKpnt(kpnt) {
         annotation;
     }
@@ -121,11 +125,18 @@ ApplicationWindow {
         ImageArea {
         }
 
-        Text {
+        Rectangle {
+            Layout.fillWidth: true
+            color: "white"
+            height: copyright.height
             Layout.alignment: Qt.AlignHCenter
-            text: "ShioriAya@XMURCS 2024."
+            Text {
+                id: copyright
+                color: "black"
+                anchors.centerIn: parent
+                text: "ShioriAya©XMURCS 2024."
+            }
         }
-
     }
 
 }

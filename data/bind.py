@@ -25,6 +25,7 @@ class DataModel:
         model: Optional[Path],
         config: Optional[Path],
     ):
+        self.annotations.initialize(root)
         self.root = root
         self.config = {
             "img_path": src,

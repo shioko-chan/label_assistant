@@ -46,12 +46,12 @@ RowLayout {
 
             MenuItem {
                 text: "撤销"
-                onTriggered: undo
+                onTriggered: undo()
             }
 
             MenuItem {
                 text: "重做"
-                onTriggered: redo
+                onTriggered: redo()
             }
         }
 
