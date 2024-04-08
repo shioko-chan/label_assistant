@@ -14,21 +14,9 @@ ApplicationWindow {
     property bool noSavingDirTip: true
     property string nextButtonText: "开始"
     property bool allSaved: true
-    property real completeCnt: 0.0
-    property real dataSetSize: 0.0
+    property real completeCnt: 0
+    property real dataSetSize: 0
     property bool modelError: false
-
-    signal nextImage
-    signal prevImage
-    signal chooseDataset(string path)
-    signal selectModel(string path)
-    signal selectModelConfig(string path)
-    signal selectSavingDir(string path)
-    signal saveConfig
-    signal saveLabels
-    signal undo
-    signal redo
-
     property alias pleaseWaitDialog: dialogs.pleaseWaitDialog
     property alias datasetDialog: dialogs.datasetDialog
     property alias modelDialog: dialogs.modelDialog
@@ -40,38 +28,19 @@ ApplicationWindow {
     property alias alreadyLastDialog: dialogs.alreadyLastDialog
     property alias notFinishConfigDialog: dialogs.notFinishConfigDialog
     property alias modelErrorDialog: dialogs.modelErrorDialog
-
     property alias pleaseWaitDialogCloseTimer: timers.pleaseWaitDialogCloseTimer
     property alias modelPreheatStartTimer: timers.modelPreheatStartTimer
 
-    width: 700
-    height: 700
-    minimumWidth: 300
-    minimumHeight: 300
-    visible: true
-
-    onClosing: function (close) {
-        if (!confimClose && !allSaved) {
-            close.accepted = false;
-            confirmQuitDialog.open();
-        } else {
-            saveConfig();
-        }
-    }
-
-    Component.onCompleted: {
-        pleaseWaitDialog.parent = mainWindow.contentItem;
-        confirmQuitDialog.parent = mainWindow.contentItem;
-        usageDialog.parent = mainWindow.contentItem;
-        alreadyFirstDialog.parent = mainWindow.contentItem;
-        alreadyLastDialog.parent = mainWindow.contentItem;
-        notFinishConfigDialog.parent = notFinishConfigDialog.contentItem;
-        modelErrorDialog.parent = mainWindow.contentItem;
-    }
-
-    ListModel {
-        id: annotationList
-    }
+    signal nextImage()
+    signal prevImage()
+    signal chooseDataset(string path)
+    signal selectModel(string path)
+    signal selectModelConfig(string path)
+    signal selectSavingDir(string path)
+    signal saveConfig()
+    signal saveLabels()
+    signal undo()
+    signal redo()
 
     function appendKpnt(kpnt) {
         annotation;
@@ -89,6 +58,29 @@ ApplicationWindow {
         annotationList.clear();
     }
 
+    width: 700
+    height: 700
+    minimumWidth: 300
+    minimumHeight: 300
+    visible: true
+    onClosing: function(close) {
+        if (!confimClose && !allSaved) {
+            close.accepted = false;
+            confirmQuitDialog.open();
+        } else {
+            saveConfig();
+        }
+    }
+    Component.onCompleted: {
+        pleaseWaitDialog.parent = mainWindow.contentItem;
+        confirmQuitDialog.parent = mainWindow.contentItem;
+        usageDialog.parent = mainWindow.contentItem;
+        alreadyFirstDialog.parent = mainWindow.contentItem;
+        alreadyLastDialog.parent = mainWindow.contentItem;
+        notFinishConfigDialog.parent = notFinishConfigDialog.contentItem;
+        modelErrorDialog.parent = mainWindow.contentItem;
+    }
+
     Dialogs {
         id: dialogs
     }
@@ -100,10 +92,12 @@ ApplicationWindow {
     ColumnLayout {
         anchors.fill: parent
 
-        TopBar {}
+        TopBar {
+        }
 
         ProgressBar {
             id: progressBar
+
             Layout.fillWidth: true
             height: 3
             Layout.alignment: Qt.AlignHCenter
@@ -121,12 +115,17 @@ ApplicationWindow {
             contentItem: Item {
                 height: parent.height
             }
+
         }
-        ImageArea {}
+
+        ImageArea {
+        }
 
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: "ShioriAya@XMURCS 2024."
         }
+
     }
+
 }

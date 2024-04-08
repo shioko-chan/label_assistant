@@ -24,5 +24,4 @@ class Predictor:
             annotations.append(
                 {"cls": int(cls), "bbox": box.tolist(), "kpnt": kpnt.tolist()}
             )
-            print(annotations[-1])
         return annotations

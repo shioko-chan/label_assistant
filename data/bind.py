@@ -1,24 +1,30 @@
 import yaml
 from typing import Optional
 from pathlib import Path
-from data.predictor import Predictor
 from PySide6.QtCore import (
     QObject,
     QUrl,
 )
-from data.data import Annotation, KeypointList
+from data.data import AnnotationList
+from data.predictor import Predictor
+from data.writer import Writer
 
 
 class DataModel:
-    def __init__(
+
+    def __init__(self, engine: QObject):
+        self.annotations = AnnotationList()
+        engine.rootContext().setContextProperty("annotationList", self.annotations)
+        self.hist_stack = []
+
+    def initialize(
         self,
-        engine: QObject,
+        root: QObject,
         src: Optional[Path],
         dst: Optional[Path],
         model: Optional[Path],
         config: Optional[Path],
     ):
-        root = engine.rootObjects()[0]
         self.root = root
         self.config = {
             "img_path": src,
@@ -26,8 +32,6 @@ class DataModel:
             "model_path": model,
             "model_config": config,
         }
-        self.annotations = Annotation()
-        engine.rootContext().setContextProperty("annotationModel", self.annotations)
         self.choose_dataset(src)
         self.set_predictor(model)
         self.set_predictor(config)
@@ -40,54 +44,40 @@ class DataModel:
         root.saveConfig.connect(self.save_config)
         root.selectSavingDir.connect(self.set_saving_dir)
         root.saveLabels.connect(self.save_label)
-        self.hist_stack = []
 
-    def get_image(self, image_path: Path):
-        self.root.setProperty("imageSource", self.images[self.index].as_uri())
-        label_path = self.save_dir / image_path.with_suffix(".txt").name
-        if label_path.exists():
-            ...
-        # with label_path.open() as f:
-        # for line in f.readline():
+    def save_label(self): ...
+
+    def _update_history(self, hist):
+        if self.index < len(self.hist_stack):
+            self.hist_stack[self.index] = hist
         else:
-            self._process_annotation(self.predictor.predict(image_path))
-
-    def _process_annotation(self, annotations):
-        # self.annotation.clear()
-        self.hist_stack.append(annotations)
-        for cls, bbox, kpnt in annotations:
-            x, y, w, h = bbox
-            self.annotations.append(
-                {
-                    "cls": self.model_config["names"][cls],
-                    "x": x,
-                    "y": y,
-                    "w": w,
-                    "h": h,
-                    "kpnt": kpnt,
-                }
-            )
-
-    def _send_data(self): ...
-
+            self.hist_stack.append(hist)
+                
     def prev_image(self):
         if self.index <= 0:
             return False
+        self._update_history(self.annotations.clear())
         self.index -= 1
-        self.get_image(self.images[self.index])
+        self.annotations.recover(self.hist_stack[self.index])
+        self.root.setProperty("imageSource", self.images[self.index].as_uri())
         self.root.setProperty("completeCnt", self.index)
         return True
 
     def next_image(self):
-        self.root.setProperty("nextButtonText", "下一张")
         if self.index + 1 >= len(self.images):
             return False
+        if self.index != -1:
+            self._update_history(self.annotations.clear())
+        else:
+            self.root.setProperty("nextButtonText", "下一张")
         self.index += 1
-        self.get_image(self.images[self.index])
+        if self.index < len(self.hist_stack):
+            self.annotations.recover(self.hist_stack[self.index])
+        else:
+            self.annotations.set(self.predictor.predict(self.images[self.index]))
+        self.root.setProperty("imageSource", self.images[self.index].as_uri())
         self.root.setProperty("completeCnt", self.index)
         return True
-
-    def save_label(self): ...
 
     def choose_dataset(self, src):
         if src:
@@ -131,6 +121,7 @@ class DataModel:
 
     def _set_model_config(self, src: Path):
         self.model_config = yaml.safe_load(src.open())
+        self.annotations.set_config(self.model_config)
         if "names" in self.model_config:
             return True
         else:

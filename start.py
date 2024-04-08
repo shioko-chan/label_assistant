@@ -56,11 +56,15 @@ if __name__ == "__main__":
     app = QGuiApplication([])
     engine = QQmlApplicationEngine()
 
+    data_model = DataModel(engine)
+
     engine.load(Path("./GUI/main.qml").resolve())
 
     if not engine.rootObjects():
         sys.exit(-1)
 
-    data_model = DataModel(engine, img_path, label_path, model_path, model_config)
+    data_model.initialize(
+        engine.rootObjects()[0], img_path, label_path, model_path, model_config
+    )
 
     sys.exit(app.exec())
