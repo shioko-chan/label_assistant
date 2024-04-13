@@ -4,6 +4,7 @@ import QtQuick.Controls.Basic 2.15
 import QtQuick.Layouts 1.15
 
 ApplicationWindow {
+
     id: mainWindow
 
     property bool confimClose: false
@@ -17,6 +18,8 @@ ApplicationWindow {
     property real completeCnt: 0
     property real dataSetSize: 0
     property bool modelError: false
+    property list<string> labelNames: []
+
     property alias pleaseWaitDialog: dialogs.pleaseWaitDialog
     property alias datasetDialog: dialogs.datasetDialog
     property alias modelDialog: dialogs.modelDialog
@@ -28,6 +31,7 @@ ApplicationWindow {
     property alias alreadyLastDialog: dialogs.alreadyLastDialog
     property alias notFinishConfigDialog: dialogs.notFinishConfigDialog
     property alias modelErrorDialog: dialogs.modelErrorDialog
+    property alias labelDialog: dialogs.labelDialog
     property alias pleaseWaitDialogCloseTimer: timers.pleaseWaitDialogCloseTimer
     property alias modelPreheatStartTimer: timers.modelPreheatStartTimer
 
@@ -44,23 +48,8 @@ ApplicationWindow {
     signal deleteAnnotation(int index)
     signal setBbox(int bbox_index, real x, real y, real width, real height)
     signal setKpnt(int bbox_index, int kpnt_index, real x, real y)
-    // signal addAnnotation(int kpnt, string annotation)
-    
-    function appendKpnt(kpnt) {
-        annotation;
-    }
-
-    function appendAnnotation(annotation) {
-        annotationList.append(annotation);
-    }
-
-    function removeAnnotation(index) {
-        annotationList.remove(index);
-    }
-
-    function clearAnnotation() {
-        annotationList.clear();
-    }
+    signal setLabel(int bbox_index, int label_index)
+    signal forceFocus()
 
     width: 700
     height: 700
@@ -83,6 +72,7 @@ ApplicationWindow {
         alreadyLastDialog.parent = mainWindow.contentItem;
         notFinishConfigDialog.parent = notFinishConfigDialog.contentItem;
         modelErrorDialog.parent = mainWindow.contentItem;
+        labelDialog.parent = mainWindow.contentItem;
     }
 
     Dialogs {
@@ -97,11 +87,13 @@ ApplicationWindow {
         anchors.fill: parent
 
         TopBar {
+            z: 1
         }
 
         ProgressBar {
             id: progressBar
 
+            z: 1
             Layout.fillWidth: true
             height: 3
             Layout.alignment: Qt.AlignHCenter
@@ -123,6 +115,7 @@ ApplicationWindow {
         }
 
         ImageArea {
+            z: 0
         }
 
         Rectangle {
@@ -130,13 +123,18 @@ ApplicationWindow {
             color: "white"
             height: copyright.height
             Layout.alignment: Qt.AlignHCenter
+            z: 1
+
             Text {
                 id: copyright
+
                 color: "black"
                 anchors.centerIn: parent
                 text: "ShioriAya©XMURCS 2024."
             }
+
         }
+
     }
 
 }

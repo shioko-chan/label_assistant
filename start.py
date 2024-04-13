@@ -46,14 +46,17 @@ if __name__ == "__main__":
     model_path = resolve_path(args.model, "model_path")
     model_config = resolve_path(None, "model_config")
 
-    # if not model_path:
-    #     model_path = Path("./weights/yolov8n_pose_powerrune-armora.pt").resolve()
-    # if not model_config:
-    #     model_config = Path("./weights/yolov8n_pose_powerrune-armor.yaml").resolve()
-    # if not label_path:
-    #     label_path = Path("./output").resolve()
+    if not model_path:
+        model_path = Path("./weights/yolov8n_pose_powerrune-armora.pt").resolve()
+    if not model_config:
+        model_config = Path("./weights/yolov8n_pose_powerrune-armor.yaml").resolve()
+    if not label_path:
+        label_path = Path("./output").resolve()
 
     app = QGuiApplication([])
+    app.setApplicationDisplayName("Label Assistant - Auto Labeling Tool")
+    app.setApplicationName("Label Assistant")
+    # app.setWindowIcon(QIcon("./resource/icon.png"))
     engine = QQmlApplicationEngine()
 
     data_model = DataModel(engine)

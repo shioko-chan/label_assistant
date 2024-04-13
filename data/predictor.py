@@ -5,6 +5,12 @@ import numpy as np
 
 
 # rewrite this class to adapt to your predict model
+# construct your predict data in a list
+# each element in the list is a dict with keys:
+#     'cls': int, class index
+#     'bbox': list, bounding box [x, y, w, h] (x, y is the center of the box, x, y, w, h should be normalized)
+#     'kpnt': list, keypoints [[x1, y1], [x2, y2], ..., [xn, yn]]
+
 class Predictor:
     def __init__(self, model: Path):
         self.model = YOLO(model)

@@ -16,6 +16,8 @@ class DataModel:
         self.annotations = AnnotationList()
         engine.rootContext().setContextProperty("annotationList", self.annotations)
         self.hist_stack = []
+        self.writer = Writer()
+        self.save_dir = None
 
     def initialize(
         self,
@@ -28,10 +30,10 @@ class DataModel:
         self.annotations.initialize(root)
         self.root = root
         self.config = {
-            "img_path": src,
-            "label_path": dst,
-            "model_path": model,
-            "model_config": config,
+            "img_path": str(src),
+            "label_path": str(dst),
+            "model_path": str(model),
+            "model_config": str(config),
         }
         self.choose_dataset(src)
         self.set_predictor(model)
@@ -46,7 +48,12 @@ class DataModel:
         root.selectSavingDir.connect(self.set_saving_dir)
         root.saveLabels.connect(self.save_label)
 
-    def save_label(self): ...
+    def save_label(self):
+        self._save_label(self.annotations.save())
+        
+    def _save_label(self, stage):
+        self.writer.save([annotation.inner_dict() for annotation in stage], self.images[self.index].stem)
+        self.root.setProperty("allSaved", True)
 
     def _update_history(self, hist):
         if self.index < len(self.hist_stack):
@@ -57,21 +64,35 @@ class DataModel:
     def prev_image(self):
         if self.index <= 0:
             return False
-        self._update_history(self.annotations.clear())
+        hist = self.annotations.clear()
+        self._update_history(hist)
+        self._save_label(hist.now())
         self.index -= 1
         self.annotations.recover(self.hist_stack[self.index])
         self.root.setProperty("imageSource", self.images[self.index].as_uri())
         self.root.setProperty("completeCnt", self.index)
         return True
 
+    def _initialize_image_list(self):
+        self.images = [image for image in self.images if not self.writer.exists(image.stem)]
+        self.root.setProperty("dataSetSize", len(self.images))
+        if not self.images:
+            self.root.setProperty("noDataSetTip", True)
+            self.root.setProperty("nextButtonText", "开始")
+        
     def next_image(self):
-        if self.index + 1 >= len(self.images):
-            return False
         if self.index != -1:
-            self._update_history(self.annotations.clear())
+            hist = self.annotations.clear()
+            self._update_history(hist)
+            self._save_label(hist.now())
         else:
             self.root.setProperty("nextButtonText", "下一张")
-        self.index += 1
+            self._initialize_image_list()
+        
+        if self.index + 1 >= len(self.images):
+            return False
+        
+        self.index += 1            
         if self.index < len(self.hist_stack):
             self.annotations.recover(self.hist_stack[self.index])
         else:
@@ -91,7 +112,7 @@ class DataModel:
                 self.images = []
         else:
             self.images = []
-
+            
         if len(self.images) != 0:
             self.config["img_path"] = str(src)
             self.root.setProperty("noDataSetTip", False)
@@ -107,12 +128,12 @@ class DataModel:
                 if src.suffix == ".pt":
                     try:
                         self.predictor = Predictor(src)
-                    except:
-                        self.root.setProperty("modelError", True)
-                    else:
                         self.predictor.predict(
                             Path("./resource/default.jpg")
                         )  # preheat
+                    except:
+                        self.root.setProperty("modelError", True)
+                    else:
                         self.root.setProperty("noModelTip", False)
                         self.config["model_path"] = str(src)
                 elif src.suffix == ".yaml":
@@ -124,6 +145,7 @@ class DataModel:
         self.model_config = yaml.safe_load(src.open())
         self.annotations.set_config(self.model_config)
         if "names" in self.model_config:
+            self.root.setProperty("labelNames", list(self.model_config["names"].values()))
             return True
         else:
             self.model_config = None
@@ -141,6 +163,7 @@ class DataModel:
             self.save_dir = dst
             self.config["label_path"] = str(dst)
             self.root.setProperty("noSavingDirTip", False)
+            self.writer.set_dst(self.save_dir)
         else:
             self.save_dir = None
 

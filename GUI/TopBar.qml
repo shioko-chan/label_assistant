@@ -1,11 +1,11 @@
 import QtQuick 2.15
-import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 
 RowLayout {
     width: parent.width
     Layout.fillWidth: true
-
+    
     MenuBar {
         Menu {
             title: "文件"
@@ -39,6 +39,7 @@ RowLayout {
                 text: "退出"
                 onTriggered: Qt.quit()
             }
+
         }
 
         Menu {
@@ -53,6 +54,7 @@ RowLayout {
                 text: "重做"
                 onTriggered: redo()
             }
+
         }
 
         Menu {
@@ -62,7 +64,9 @@ RowLayout {
                 text: "关于"
                 onTriggered: usageDialog.open()
             }
+
         }
+
     }
 
     Item {
@@ -79,12 +83,14 @@ RowLayout {
             onClicked: {
                 if (noDataSetTip || noModelTip || noModelConfigTip || noSavingDirTip) {
                     notFinishConfigDialog.open();
-                    return;
+                    return ;
                 }
-                if (completeCnt <= 0.0) {
+                if (completeCnt <= 0) {
                     alreadyFirstDialog.open();
-                } else
+                } else {
                     prevImage();
+                    forceFocus();
+                }
             }
         }
 
@@ -95,13 +101,17 @@ RowLayout {
             onClicked: {
                 if (noDataSetTip || noModelTip || noModelConfigTip || noSavingDirTip) {
                     notFinishConfigDialog.open();
-                    return;
+                    return ;
                 }
                 if (completeCnt + 1 >= dataSetSize) {
                     alreadyLastDialog.open();
-                } else
+                } else {
                     nextImage();
+                    forceFocus();
+                }
             }
         }
+
     }
+
 }

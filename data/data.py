@@ -13,9 +13,12 @@ class Keypoint:
     x: int
     y: int
     visible: bool = True
-    
+
     def copy(self):
         return Keypoint(self.x, self.y, self.visible)
+    
+    def inner_dict(self):
+        return {"x": self.x, "y": self.y, "visible": self.visible}
 
 
 class KeypointList(QAbstractListModel):
@@ -48,6 +51,10 @@ class KeypointList(QAbstractListModel):
 
     def copy(self):
         return KeypointList([keypoint.copy() for keypoint in self.keypointList])
+    
+    def inner_dict(self):
+        return [keypoint.inner_dict() for keypoint in self.keypointList]
+
 
 @dataclass
 class Annotation:
@@ -73,13 +80,26 @@ class Annotation:
         self.kpnt.set(idx, Keypoint(x, y))
 
     def copy(self):
-        return Annotation(self.x, self.y, self.w, self.h, self.cls_id, self.cls, self.kpnt.copy())
+        return Annotation(
+            self.x, self.y, self.w, self.h, self.cls_id, self.cls, self.kpnt.copy()
+        )
+
+    def inner_dict(self):
+        return {
+            "x": self.x,
+            "y": self.y,
+            "w": self.w,
+            "h": self.h,
+            "cls_id": self.cls_id,
+            "cls": self.cls,
+            "kpnt": self.kpnt.inner_dict(),
+        }
+
 
 class History:
     def __init__(self, stage):
-        self.hist = []
         self.index = 0
-        self.hist.append(stage)
+        self.hist = [stage]
 
     def add(self, stage):
         self.index += 1
@@ -120,6 +140,8 @@ class AnnotationList(QAbstractListModel):
         root.deleteAnnotation.connect(self.remove)
         root.setBbox.connect(self.setBbox)
         root.setKpnt.connect(self.setKpnt)
+        root.setLabel.connect(self.setLabel)
+        self.root = root
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
         if 0 <= index.row() < len(self.annotationList):
@@ -161,7 +183,7 @@ class AnnotationList(QAbstractListModel):
         self.endRemoveRows()
         self.beginInsertRows(QModelIndex(), 0, len(self.annotationList) - 1)
         self.endInsertRows()
-        
+
     def recover(self, history: History):
         self.hist = history
         now_stage = self.hist.now()
@@ -178,7 +200,7 @@ class AnnotationList(QAbstractListModel):
         if next_stage != None:
             self._update_state([annotation.copy() for annotation in next_stage])
 
-    def setData(self, index: QModelIndex, value, role: int = Qt.EditRole) -> bool:
+    def setData(self, index: QModelIndex, value, _: int = Qt.EditRole) -> bool:
         self.annotationList[index.row()] = value
         self.hist.add(self.copy())
         return True
@@ -196,10 +218,23 @@ class AnnotationList(QAbstractListModel):
     def setBbox(self, bbox_index, x, y, w, h):
         self.annotationList[bbox_index].set_bbox(x, y, w, h)
         self.hist.add(self.copy())
+        self.root.setProperty("allSaved", False)
 
+    def setLabel(self, bbox_index, cls_id):
+        self.annotationList[bbox_index].set_cls(cls_id, self.config["names"][cls_id])
+        self.hist.add(self.copy())
+        self.root.setProperty("allSaved", False)
+        
     def setKpnt(self, bbox_index, kpnt_index, x, y):
         self.annotationList[bbox_index].set_keypoint(kpnt_index, x, y)
         self.hist.add(self.copy())
+        self.root.setProperty("allSaved", False)
 
     def copy(self):
         return [annotation.copy() for annotation in self.annotationList]
+
+    def inner_dict(self):
+        return [annotation.inner_dict() for annotation in self.annotationList]
+    
+    def save(self):
+        return self.annotationList
